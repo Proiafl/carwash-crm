@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { UserCog, Mail, Shield, ShieldCheck } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { UserCog, Mail, Shield, ShieldCheck, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,8 @@ type UserRole = {
 type Employee = Profile & {
   role?: string;
   email?: string;
+  todayServices?: number;
+  weekServices?: number;
 };
 
 export default function Personal() {
@@ -51,12 +53,39 @@ export default function Personal() {
       .from("user_roles")
       .select("user_id, role");
 
+    // Fetch performance stats from service_orders
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const { data: todayOrders } = await supabase
+      .from("service_orders")
+      .select("assigned_to")
+      .gte("created_at", today.toISOString())
+      .in("status", ["ready", "delivered"]);
+
+    const { data: weekOrders } = await supabase
+      .from("service_orders")
+      .select("assigned_to")
+      .gte("created_at", startOfWeek.toISOString())
+      .in("status", ["ready", "delivered"]);
+
+    // Count per employee
+    const todayCounts: Record<string, number> = {};
+    const weekCounts: Record<string, number> = {};
+    (todayOrders || []).forEach(o => { if (o.assigned_to) todayCounts[o.assigned_to] = (todayCounts[o.assigned_to] || 0) + 1; });
+    (weekOrders || []).forEach(o => { if (o.assigned_to) weekCounts[o.assigned_to] = (weekCounts[o.assigned_to] || 0) + 1; });
+
     // Combine data
     const employeesData: Employee[] = (profiles || []).map(profile => {
       const userRole = roles?.find(r => r.user_id === profile.user_id);
       return {
         ...profile,
         role: userRole?.role || "employee",
+        todayServices: todayCounts[profile.user_id] || 0,
+        weekServices: weekCounts[profile.user_id] || 0,
       };
     });
 
@@ -130,6 +159,21 @@ export default function Personal() {
                       {employee.phone}
                     </div>
                   )}
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" /> Rendimiento
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-lg font-bold">{employee.todayServices || 0}</p>
+                        <p className="text-[10px] text-muted-foreground">Hoy</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-lg font-bold">{employee.weekServices || 0}</p>
+                        <p className="text-[10px] text-muted-foreground">Esta Semana</p>
+                      </div>
+                    </div>
+                  </div>
                   <div className="pt-2 text-[10px] text-muted-foreground text-right italic">
                     Vinculado el {new Date(employee.created_at).toLocaleDateString('es-MX')}
                   </div>
