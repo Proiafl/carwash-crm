@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Pencil, Trash2, Phone, Mail } from "lucide-react";
+import { Pencil, Trash2, Phone, Mail, Eye, Clock, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -70,6 +72,10 @@ export default function Clientes() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteClient, setDeleteClient] = useState<Client | null>(null);
+  const [viewClient, setViewClient] = useState<Client | null>(null);
+  const [clientHistory, setClientHistory] = useState<any[]>([]);
+  const [clientStats, setClientStats] = useState<{ totalSpent: number; lastWash: string | null; totalServices: number }>({ totalSpent: 0, lastWash: null, totalServices: 0 });
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<ClientFormData>({
@@ -131,6 +137,46 @@ export default function Clientes() {
       vehicle_notes: "",
     });
     setIsDialogOpen(true);
+  };
+
+  const handleViewClient = async (client: Client) => {
+    setViewClient(client);
+    setIsLoadingHistory(true);
+
+    // Fetch service history from service_orders
+    const { data: orders } = await supabase
+      .from("service_orders")
+      .select(`
+        id, price, status, created_at, completed_at, delivered_at,
+        service_types (name)
+      `)
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    // Fetch service history from service_records too
+    const { data: records } = await supabase
+      .from("service_records")
+      .select(`
+        id, price, status, created_at, completed_at,
+        service_types (name)
+      `)
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const allHistory = [
+      ...(orders || []).map(o => ({ ...o, source: "order" })),
+      ...(records || []).map(r => ({ ...r, source: "record" })),
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const completedItems = allHistory.filter(h => h.status === "delivered" || h.status === "completed");
+    const totalSpent = completedItems.reduce((sum, h) => sum + Number(h.price), 0);
+    const lastWash = completedItems.length > 0 ? completedItems[0].created_at : null;
+
+    setClientHistory(allHistory);
+    setClientStats({ totalSpent, lastWash, totalServices: completedItems.length });
+    setIsLoadingHistory(false);
   };
 
   const handleEdit = (client: Client) => {
@@ -247,7 +293,10 @@ export default function Clientes() {
       key: "actions",
       header: "Acciones",
       render: (client: Client) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" onClick={() => handleViewClient(client)} title="Ver historial">
+            <Eye className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
             <Pencil className="h-4 w-4" />
           </Button>
@@ -438,6 +487,74 @@ export default function Clientes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Client Detail / History Dialog */}
+      <Dialog open={!!viewClient} onOpenChange={() => setViewClient(null)}>
+        <DialogContent className="max-w-lg">
+          {viewClient && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{viewClient.name}</DialogTitle>
+                <DialogDescription>
+                  {viewClient.vehicle_brand} {viewClient.vehicle_model} — {viewClient.vehicle_plate}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <DollarSign className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                    <p className="text-lg font-bold">${clientStats.totalSpent.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Total Gastado</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <Clock className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                    <p className="text-lg font-bold">{clientStats.totalServices}</p>
+                    <p className="text-xs text-muted-foreground">Servicios</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3 text-center">
+                    <Clock className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                    <p className="text-sm font-bold">
+                      {clientStats.lastWash ? new Date(clientStats.lastWash).toLocaleDateString('es-AR') : "Nunca"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Último Lavado</p>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="mt-4">
+                <h4 className="font-semibold text-sm mb-3">Historial de Servicios</h4>
+                {isLoadingHistory ? (
+                  <p className="text-sm text-muted-foreground">Cargando...</p>
+                ) : clientHistory.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">Sin servicios registrados</p>
+                ) : (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {clientHistory.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
+                        <div>
+                          <p className="font-medium">{item.service_types?.name || "Servicio"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString('es-AR')} {new Date(item.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={item.status === "delivered" || item.status === "completed" ? "default" : "secondary"} className="text-xs">
+                            {item.status === "delivered" ? "Entregado" : item.status === "completed" ? "Completado" : item.status === "in_progress" ? "En proceso" : item.status === "queued" ? "En cola" : item.status === "cancelled" ? "Cancelado" : item.status}
+                          </Badge>
+                          <span className="font-semibold">${Number(item.price).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
