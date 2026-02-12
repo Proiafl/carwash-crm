@@ -40,6 +40,11 @@ const clientSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   notes: z.string().optional(),
+  vehicle_brand: z.string().min(1, "La marca es requerida"),
+  vehicle_model: z.string().min(1, "El modelo es requerido"),
+  vehicle_plate: z.string().min(1, "La patente es requerida"),
+  vehicle_color: z.string().min(1, "El color es requerido"),
+  vehicle_notes: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -57,7 +62,17 @@ export default function Clientes() {
 
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
-    defaultValues: { name: "", phone: "", email: "", notes: "" },
+    defaultValues: {
+      name: "",
+      phone: "",
+      email: "",
+      notes: "",
+      vehicle_brand: "",
+      vehicle_model: "",
+      vehicle_plate: "",
+      vehicle_color: "",
+      vehicle_notes: "",
+    },
   });
 
   const fetchClients = async () => {
@@ -103,6 +118,11 @@ export default function Clientes() {
       phone: client.phone || "",
       email: client.email || "",
       notes: client.notes || "",
+      vehicle_brand: (client as any).vehicle_brand || "",
+      vehicle_model: (client as any).vehicle_model || "",
+      vehicle_plate: (client as any).vehicle_plate || "",
+      vehicle_color: (client as any).vehicle_color || "",
+      vehicle_notes: (client as any).vehicle_notes || "",
     });
     setIsDialogOpen(true);
   };
@@ -113,6 +133,11 @@ export default function Clientes() {
       phone: data.phone || null,
       email: data.email || null,
       notes: data.notes || null,
+      vehicle_brand: data.vehicle_brand,
+      vehicle_model: data.vehicle_model,
+      vehicle_plate: data.vehicle_plate,
+      vehicle_color: data.vehicle_color,
+      vehicle_notes: data.vehicle_notes || null,
     };
 
     if (editingClient) {
@@ -157,6 +182,16 @@ export default function Clientes() {
 
   const columns = [
     { key: "name", header: "Nombre" },
+    {
+      key: "vehicle",
+      header: "Vehículo",
+      render: (client: Client) => (
+        <div>
+          <p className="font-medium">{(client as any).vehicle_brand} {(client as any).vehicle_model}</p>
+          <p className="text-xs text-muted-foreground font-mono">{(client as any).vehicle_plate}</p>
+        </div>
+      )
+    },
     {
       key: "phone",
       header: "Teléfono",
@@ -271,14 +306,83 @@ export default function Clientes() {
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="vehicle_brand"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Marca Vehículo *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Toyota" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="vehicle_model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modelo *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Hilux" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="vehicle_plate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Patente *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ABC-123" className="font-mono uppercase" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="vehicle_color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Color *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Blanco" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="vehicle_notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observaciones Vehículo</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Color, detalles, etc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notas</FormLabel>
+                    <FormLabel>Notas del Cliente</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Preferencias, observaciones..." {...field} />
+                      <Textarea placeholder="Preferencias del cliente..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

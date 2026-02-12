@@ -1,13 +1,14 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Car, 
-  Sparkles, 
-  Package, 
-  DollarSign, 
+import {
+  LayoutDashboard,
+  Users,
+  Car,
+  Sparkles,
+  Package,
+  DollarSign,
   UserCog,
   LogOut,
-  Menu
+  Menu,
+  Settings
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,11 +32,11 @@ import { Separator } from "@/components/ui/separator";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Vehículos", url: "/vehiculos", icon: Car },
   { title: "Servicios", url: "/servicios", icon: Sparkles },
   { title: "Inventario", url: "/inventario", icon: Package },
   { title: "Finanzas", url: "/finanzas", icon: DollarSign },
   { title: "Personal", url: "/personal", icon: UserCog },
+  { title: "Configuración", url: "/configuracion", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -58,9 +59,9 @@ export function AppSidebar() {
           )}
         </div>
       </SidebarHeader>
-      
+
       <Separator className="bg-sidebar-border" />
-      
+
       <SidebarContent className="p-2">
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/60 text-xs uppercase tracking-wider px-3">
@@ -71,9 +72,9 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/"} 
+                    <NavLink
+                      to={item.url}
+                      end={item.url === "/"}
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
                     >
@@ -96,8 +97,8 @@ export function AppSidebar() {
             <p className="text-sm text-sidebar-foreground truncate">{user.email}</p>
           </div>
         )}
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           className="w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           onClick={signOut}
         >

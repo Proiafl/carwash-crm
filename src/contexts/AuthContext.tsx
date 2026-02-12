@@ -78,14 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    if (!error && data.user) {
-      // Add employee role by default (first user will need manual admin assignment)
-      await supabase.from("user_roles").insert({
-        user_id: data.user.id,
-        role: "employee"
-      });
-    }
-
     return { error };
   };
 

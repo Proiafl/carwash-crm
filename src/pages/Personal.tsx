@@ -33,7 +33,7 @@ export default function Personal() {
 
   const fetchEmployees = async () => {
     setIsLoading(true);
-    
+
     // Fetch profiles
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
@@ -82,7 +82,7 @@ export default function Personal() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Personal</h1>
-        <p className="text-muted-foreground">Gestión de empleados y roles</p>
+        <p className="text-muted-foreground">Gestión operativa del equipo de trabajo</p>
       </div>
 
       {isLoading ? (
@@ -95,7 +95,7 @@ export default function Personal() {
             <UserCog className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No hay empleados registrados</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Los empleados aparecerán aquí cuando se registren en el sistema
+              Los empleados aparecerán aquí cuando se vinculen al sistema
             </p>
           </CardContent>
         </Card>
@@ -107,56 +107,37 @@ export default function Personal() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                      {employee.role === "admin" ? (
-                        <ShieldCheck className="h-6 w-6 text-primary" />
-                      ) : (
-                        <UserCog className="h-6 w-6 text-primary" />
-                      )}
+                      <UserCog className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{employee.full_name}</CardTitle>
-                      <CardDescription className="flex items-center gap-1 mt-1">
-                        <Mail className="h-3 w-3" />
-                        {employee.email || "Sin email"}
+                      <CardDescription className="flex items-center gap-1 mt-1 font-mono text-[10px] uppercase tracking-wider">
+                        Rol: {roleLabels[employee.role || "employee"]}
                       </CardDescription>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className={roleColors[employee.role || "employee"]}>
-                    <Shield className="h-3 w-3 mr-1" />
-                    {roleLabels[employee.role || "employee"]}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    Desde {new Date(employee.created_at).toLocaleDateString('es-MX')}
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    {employee.email || "Sin correo"}
+                  </div>
+                  {employee.phone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="h-4 w-4">📞</span>
+                      {employee.phone}
+                    </div>
+                  )}
+                  <div className="pt-2 text-[10px] text-muted-foreground text-right italic">
+                    Vinculado el {new Date(employee.created_at).toLocaleDateString('es-MX')}
+                  </div>
                 </div>
-                {employee.phone && (
-                  <p className="text-sm text-muted-foreground mt-3">
-                    📞 {employee.phone}
-                  </p>
-                )}
               </CardContent>
             </Card>
           ))}
         </div>
-      )}
-
-      {role === "admin" && (
-        <Card className="bg-muted/50">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Gestión de Roles
-            </CardTitle>
-            <CardDescription>
-              Para asignar el rol de administrador a un empleado, contacta al soporte técnico o 
-              edita directamente en la base de datos.
-            </CardDescription>
-          </CardHeader>
-        </Card>
       )}
     </div>
   );

@@ -8,11 +8,11 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
-import Vehiculos from "./pages/Vehiculos";
 import Servicios from "./pages/Servicios";
 import Inventario from "./pages/Inventario";
 import Finanzas from "./pages/Finanzas";
 import Personal from "./pages/Personal";
+import Configuracion from "./pages/Configuracion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,11 +59,11 @@ function AppRoutes() {
       <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-      <Route path="/vehiculos" element={<ProtectedRoute><Vehiculos /></ProtectedRoute>} />
       <Route path="/servicios" element={<ProtectedRoute><Servicios /></ProtectedRoute>} />
       <Route path="/inventario" element={<ProtectedRoute><Inventario /></ProtectedRoute>} />
       <Route path="/finanzas" element={<ProtectedRoute><Finanzas /></ProtectedRoute>} />
       <Route path="/personal" element={<ProtectedRoute><Personal /></ProtectedRoute>} />
+      <Route path="/configuracion" element={<ProtectedRoute><Configuracion /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

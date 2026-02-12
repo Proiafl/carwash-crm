@@ -20,6 +20,7 @@ export default function Dashboard() {
     lowStockItems: 0,
   });
   const [recentServices, setRecentServices] = useState<any[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ day: string; servicios: number; ingresos: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,11 +40,14 @@ export default function Dashboard() {
         .from("clients")
         .select("*", { count: "exact", head: true });
 
-      // Fetch low stock items
-      const { data: lowStockData } = await supabase
+      // Fetch low stock items — compare current_stock vs min_stock client-side
+      const { data: allInventory } = await supabase
         .from("inventory")
-        .select("*")
-        .lt("current_stock", supabase.rpc ? 0 : 10); // Check if stock < min_stock
+        .select("current_stock, min_stock");
+
+      const lowStockCount = (allInventory || []).filter(
+        i => Number(i.current_stock) < Number(i.min_stock)
+      ).length;
 
       // Fetch recent services with details
       const { data: recentData } = await supabase
@@ -54,7 +58,7 @@ export default function Dashboard() {
           status,
           created_at,
           service_types (name),
-          vehicles (brand, model, plate, clients (name))
+          clients (name, vehicle_brand, vehicle_model, vehicle_plate)
         `)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -65,8 +69,36 @@ export default function Dashboard() {
         todayServices: todayServicesData?.length || 0,
         todayRevenue,
         totalClients: clientsCount || 0,
-        lowStockItems: lowStockData?.filter(i => Number(i.current_stock) < Number(i.min_stock)).length || 0,
+        lowStockItems: lowStockCount,
       });
+
+      // Fetch weekly data (real)
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); // Lunes
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const { data: weeklyServicesData } = await supabase
+        .from("service_records")
+        .select("price, created_at")
+        .gte("created_at", startOfWeek.toISOString())
+        .eq("status", "completed");
+
+      const dayNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+      const weeklyDataMap = dayNames.map((day) => ({
+        day,
+        servicios: 0,
+        ingresos: 0,
+      }));
+
+      (weeklyServicesData || []).forEach((record) => {
+        const date = new Date(record.created_at);
+        let dayIndex = date.getDay() - 1; // 0=Lun
+        if (dayIndex < 0) dayIndex = 6; // Domingo
+        weeklyDataMap[dayIndex].servicios += 1;
+        weeklyDataMap[dayIndex].ingresos += Number(record.price);
+      });
+
+      setWeeklyData(weeklyDataMap);
 
       setRecentServices(recentData || []);
       setIsLoading(false);
@@ -75,16 +107,7 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  // Sample chart data (would be fetched from DB in production)
-  const weeklyData = [
-    { day: "Lun", servicios: 12, ingresos: 1200 },
-    { day: "Mar", servicios: 15, ingresos: 1500 },
-    { day: "Mié", servicios: 8, ingresos: 800 },
-    { day: "Jue", servicios: 18, ingresos: 1800 },
-    { day: "Vie", servicios: 22, ingresos: 2200 },
-    { day: "Sáb", servicios: 28, ingresos: 2800 },
-    { day: "Dom", servicios: 10, ingresos: 1000 },
-  ];
+
 
   const statusColors: Record<string, string> = {
     pending: "bg-warning/10 text-warning",
@@ -151,12 +174,12 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="day" className="text-xs" />
                   <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))", 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)"
-                    }} 
+                    }}
                   />
                   <Bar dataKey="servicios" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -177,18 +200,18 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="day" className="text-xs" />
                   <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "hsl(var(--card))", 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)"
                     }}
                     formatter={(value) => [`$${value}`, "Ingresos"]}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="ingresos" 
-                    stroke="hsl(var(--primary))" 
+                  <Line
+                    type="monotone"
+                    dataKey="ingresos"
+                    stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     dot={{ fill: "hsl(var(--primary))" }}
                   />
@@ -219,7 +242,7 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <p className="font-medium">{service.service_types?.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {service.vehicles?.clients?.name} - {service.vehicles?.brand} {service.vehicles?.model}
+                      {service.clients?.name} - {service.clients?.vehicle_brand} {service.clients?.vehicle_model} ({service.clients?.vehicle_plate})
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
