@@ -13,6 +13,7 @@ import Inventario from "./pages/Inventario";
 import Finanzas from "./pages/Finanzas";
 import Personal from "./pages/Personal";
 import Configuracion from "./pages/Configuracion";
+import Ordenes from "./pages/Ordenes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/ordenes" element={<ProtectedRoute><Ordenes /></ProtectedRoute>} />
       <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
       <Route path="/servicios" element={<ProtectedRoute><Servicios /></ProtectedRoute>} />
       <Route path="/inventario" element={<ProtectedRoute><Inventario /></ProtectedRoute>} />

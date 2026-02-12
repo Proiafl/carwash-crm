@@ -8,7 +8,8 @@ import {
   UserCog,
   LogOut,
   Menu,
-  Settings
+  Settings,
+  ClipboardList
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +32,7 @@ import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Órdenes", url: "/ordenes", icon: ClipboardList },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Servicios", url: "/servicios", icon: Sparkles },
   { title: "Inventario", url: "/inventario", icon: Package },
