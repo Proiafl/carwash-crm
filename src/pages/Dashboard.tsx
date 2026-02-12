@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Car, Users, Package, TrendingUp, AlertTriangle } from "lucide-react";
+import { DollarSign, Car, Users, Package, TrendingUp, AlertTriangle, Play, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,8 @@ interface DashboardStats {
   todayRevenue: number;
   totalClients: number;
   lowStockItems: number;
+  inProgressOrders: number;
+  readyOrders: number;
 }
 
 export default function Dashboard() {
@@ -18,9 +21,12 @@ export default function Dashboard() {
     todayRevenue: 0,
     totalClients: 0,
     lowStockItems: 0,
+    inProgressOrders: 0,
+    readyOrders: 0,
   });
   const [recentServices, setRecentServices] = useState<any[]>([]);
   const [weeklyData, setWeeklyData] = useState<{ day: string; servicios: number; ingresos: number }[]>([]);
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -70,6 +76,8 @@ export default function Dashboard() {
         todayRevenue,
         totalClients: clientsCount || 0,
         lowStockItems: lowStockCount,
+        inProgressOrders: 0,
+        readyOrders: 0,
       });
 
       // Fetch weekly data (real)
@@ -100,6 +108,28 @@ export default function Dashboard() {
 
       setWeeklyData(weeklyDataMap);
 
+      // Fetch active orders from service_orders
+      const { data: activeOrdersData } = await supabase
+        .from("service_orders")
+        .select(`
+          id, vehicle_plate, vehicle_description, price, status, queued_at, started_at,
+          clients (name),
+          service_types (name)
+        `)
+        .gte("created_at", today)
+        .in("status", ["queued", "in_progress", "ready"])
+        .order("created_at", { ascending: true });
+
+      const inProgressCount = (activeOrdersData || []).filter(o => o.status === "in_progress").length;
+      const readyCount = (activeOrdersData || []).filter(o => o.status === "ready").length;
+
+      setStats(prev => ({
+        ...prev,
+        inProgressOrders: inProgressCount,
+        readyOrders: readyCount,
+      }));
+      setActiveOrders(activeOrdersData || []);
+
       setRecentServices(recentData || []);
       setIsLoading(false);
     };
@@ -121,6 +151,15 @@ export default function Dashboard() {
     in_progress: "En Proceso",
     completed: "Completado",
     cancelled: "Cancelado",
+    queued: "En Cola",
+    ready: "Listo",
+    delivered: "Entregado",
+  };
+
+  const orderStatusColors: Record<string, string> = {
+    queued: "bg-warning/10 text-warning border-warning/30",
+    in_progress: "bg-primary/10 text-primary border-primary/30",
+    ready: "bg-success/10 text-success border-success/30",
   };
 
   return (
@@ -131,7 +170,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatsCard
           title="Servicios Hoy"
           value={stats.todayServices}
@@ -157,6 +196,20 @@ export default function Dashboard() {
           icon={<AlertTriangle className="h-5 w-5" />}
           className={stats.lowStockItems > 0 ? "border-warning/50" : ""}
           description="productos por reabastecer"
+        />
+        <StatsCard
+          title="En Proceso"
+          value={stats.inProgressOrders}
+          icon={<Play className="h-5 w-5" />}
+          className={stats.inProgressOrders > 0 ? "border-primary/50" : ""}
+          description="vehículos lavándose"
+        />
+        <StatsCard
+          title="Listos p/ Retirar"
+          value={stats.readyOrders}
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          className={stats.readyOrders > 0 ? "border-success/50" : ""}
+          description="listos para entregar"
         />
       </div>
 
@@ -250,6 +303,38 @@ export default function Dashboard() {
                       {statusLabels[service.status]}
                     </span>
                     <span className="font-semibold">${Number(service.price).toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Active Orders Today */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Órdenes Activas de Hoy</CardTitle>
+          <CardDescription>Vehículos en cola, en proceso y listos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {activeOrders.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No hay órdenes activas hoy</p>
+          ) : (
+            <div className="space-y-3">
+              {activeOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex-1">
+                    <p className="font-mono font-bold">{order.vehicle_plate}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.clients?.name} — {order.service_types?.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className={orderStatusColors[order.status] || ""}>
+                      {statusLabels[order.status]}
+                    </Badge>
+                    <span className="font-semibold">${Number(order.price).toLocaleString()}</span>
                   </div>
                 </div>
               ))}
