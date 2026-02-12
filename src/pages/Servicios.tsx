@@ -245,7 +245,6 @@ export default function Servicios() {
       toast({ title: "Servicio eliminado del catálogo" });
       fetchServiceTypes();
     }
-    fetchServiceTypes();
     setDeleteService(null);
   };
 
