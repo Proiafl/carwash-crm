@@ -23,11 +23,11 @@ export type Database = {
           notes: string | null
           phone: string | null
           updated_at: string
-          vehicle_brand: string | null
-          vehicle_model: string | null
-          vehicle_plate: string | null
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_model: string
           vehicle_notes: string | null
-          vehicle_color: string | null
+          vehicle_plate: string
         }
         Insert: {
           created_at?: string
@@ -37,10 +37,11 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
-          vehicle_brand?: string | null
-          vehicle_model?: string | null
-          vehicle_plate?: string | null
+          vehicle_brand?: string
+          vehicle_color?: string
+          vehicle_model?: string
           vehicle_notes?: string | null
+          vehicle_plate?: string
         }
         Update: {
           created_at?: string
@@ -50,10 +51,11 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
-          vehicle_brand?: string | null
-          vehicle_model?: string | null
-          vehicle_plate?: string | null
+          vehicle_brand?: string
+          vehicle_color?: string
+          vehicle_model?: string
           vehicle_notes?: string | null
+          vehicle_plate?: string
         }
         Relationships: []
       }
@@ -194,56 +196,167 @@ export type Database = {
         }
         Relationships: []
       }
+      service_inventory: {
+        Row: {
+          id: string
+          inventory_id: string
+          quantity: number
+          service_type_id: string
+        }
+        Insert: {
+          id?: string
+          inventory_id: string
+          quantity?: number
+          service_type_id: string
+        }
+        Update: {
+          id?: string
+          inventory_id?: string
+          quantity?: number
+          service_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_inventory_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_inventory_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_orders: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          delivered_at: string | null
+          id: string
+          inventory_deducted: boolean | null
+          notes: string | null
+          price: number
+          queued_at: string | null
+          service_type_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string | null
+          vehicle_description: string | null
+          vehicle_plate: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivered_at?: string | null
+          id?: string
+          inventory_deducted?: boolean | null
+          notes?: string | null
+          price?: number
+          queued_at?: string | null
+          service_type_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          vehicle_description?: string | null
+          vehicle_plate: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivered_at?: string | null
+          id?: string
+          inventory_deducted?: boolean | null
+          notes?: string | null
+          price?: number
+          queued_at?: string | null
+          service_type_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          vehicle_description?: string | null
+          vehicle_plate?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_records: {
         Row: {
+          client_id: string | null
           completed_at: string | null
           created_at: string
           employee_id: string | null
           id: string
           notes: string | null
           price: number
-          service_type_id: string
+          service_type_id: string | null
           started_at: string | null
           status: string
-          client_id: string
         }
         Insert: {
+          client_id?: string | null
           completed_at?: string | null
           created_at?: string
           employee_id?: string | null
           id?: string
           notes?: string | null
           price: number
-          service_type_id: string
+          service_type_id?: string | null
           started_at?: string | null
           status?: string
-          client_id: string
         }
         Update: {
+          client_id?: string | null
           completed_at?: string | null
           created_at?: string
           employee_id?: string | null
           id?: string
           notes?: string | null
           price?: number
-          service_type_id?: string
+          service_type_id?: string | null
           started_at?: string | null
           status?: string
-          client_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "service_records_service_type_id_fkey"
-            columns: ["service_type_id"]
-            isOneToOne: false
-            referencedRelation: "service_types"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "service_records_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_records_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
             referencedColumns: ["id"]
           },
         ]
@@ -277,45 +390,6 @@ export type Database = {
           price?: number
         }
         Relationships: []
-      }
-      service_inventory: {
-        Row: {
-          created_at: string
-          id: string
-          inventory_id: string
-          quantity: number
-          service_type_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          inventory_id: string
-          quantity?: number
-          service_type_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          inventory_id?: string
-          quantity?: number
-          service_type_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "service_inventory_inventory_id_fkey"
-            columns: ["inventory_id"]
-            isOneToOne: false
-            referencedRelation: "inventory"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "service_inventory_service_type_id_fkey"
-            columns: ["service_type_id"]
-            isOneToOne: false
-            referencedRelation: "service_types"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_roles: {
         Row: {
@@ -387,14 +461,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_authenticated: { Args: never; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "employee"
