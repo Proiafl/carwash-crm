@@ -48,7 +48,19 @@ const clientSchema = z.object({
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
-type Client = ClientFormData & { id: string; created_at: string };
+type Client = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_plate: string;
+  vehicle_color: string;
+  vehicle_notes: string | null;
+  created_at: string;
+};
 
 export default function Clientes() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -107,7 +119,17 @@ export default function Clientes() {
 
   const handleAdd = () => {
     setEditingClient(null);
-    form.reset({ name: "", phone: "", email: "", notes: "" });
+    form.reset({
+      name: "",
+      phone: "",
+      email: "",
+      notes: "",
+      vehicle_brand: "",
+      vehicle_model: "",
+      vehicle_plate: "",
+      vehicle_color: "",
+      vehicle_notes: "",
+    });
     setIsDialogOpen(true);
   };
 
@@ -118,11 +140,11 @@ export default function Clientes() {
       phone: client.phone || "",
       email: client.email || "",
       notes: client.notes || "",
-      vehicle_brand: (client as any).vehicle_brand || "",
-      vehicle_model: (client as any).vehicle_model || "",
-      vehicle_plate: (client as any).vehicle_plate || "",
-      vehicle_color: (client as any).vehicle_color || "",
-      vehicle_notes: (client as any).vehicle_notes || "",
+      vehicle_brand: client.vehicle_brand || "",
+      vehicle_model: client.vehicle_model || "",
+      vehicle_plate: client.vehicle_plate || "",
+      vehicle_color: client.vehicle_color || "",
+      vehicle_notes: client.vehicle_notes || "",
     });
     setIsDialogOpen(true);
   };
@@ -187,8 +209,8 @@ export default function Clientes() {
       header: "Vehículo",
       render: (client: Client) => (
         <div>
-          <p className="font-medium">{(client as any).vehicle_brand} {(client as any).vehicle_model}</p>
-          <p className="text-xs text-muted-foreground font-mono">{(client as any).vehicle_plate}</p>
+          <p className="font-medium">{client.vehicle_brand} {client.vehicle_model}</p>
+          <p className="text-xs text-muted-foreground font-mono">{client.vehicle_plate}</p>
         </div>
       )
     },
