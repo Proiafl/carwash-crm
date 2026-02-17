@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Users,
   Car,
+  Droplets,
   Sparkles,
   Package,
   DollarSign,
@@ -31,14 +32,14 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Órdenes", url: "/ordenes", icon: ClipboardList },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Servicios", url: "/servicios", icon: Sparkles },
-  { title: "Inventario", url: "/inventario", icon: Package },
-  { title: "Finanzas", url: "/finanzas", icon: DollarSign },
-  { title: "Personal", url: "/personal", icon: UserCog },
-  { title: "Configuración", url: "/configuracion", icon: Settings },
+  { title: "Dashboard", url: "/app", icon: LayoutDashboard },
+  { title: "Órdenes", url: "/app/ordenes", icon: ClipboardList },
+  { title: "Clientes", url: "/app/clientes", icon: Users },
+  { title: "Servicios", url: "/app/servicios", icon: Sparkles },
+  { title: "Inventario", url: "/app/inventario", icon: Package },
+  { title: "Finanzas", url: "/app/finanzas", icon: DollarSign },
+  { title: "Personal", url: "/app/personal", icon: UserCog },
+  { title: "Configuración", url: "/app/configuracion", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -50,12 +51,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary glow-blue-sm">
+            <Droplets className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-sidebar-foreground">Lavadero</span>
+              <span className="text-lg font-bold text-sidebar-foreground">CarwashIApp</span>
               <span className="text-xs text-sidebar-foreground/60">Sistema de Gestión</span>
             </div>
           )}
@@ -76,7 +77,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
                       to={item.url}
-                      end={item.url === "/"}
+                      end={item.url === "/app"}
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
                       activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
                     >

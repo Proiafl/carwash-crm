@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import AiChatButton from "@/components/ai/AiChatButton";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             {children}
           </div>
         </main>
+        <AiChatButton />
       </div>
     </SidebarProvider>
   );

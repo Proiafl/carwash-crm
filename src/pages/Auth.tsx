@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Droplets, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,7 @@ export default function Auth() {
     if (error) {
       toast({
         title: "Error al iniciar sesión",
-        description: error.message === "Invalid login credentials" 
+        description: error.message === "Invalid login credentials"
           ? "Credenciales inválidas. Verifica tu email y contraseña."
           : error.message,
         variant: "destructive",
@@ -88,15 +88,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md glow-blue border-border/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-              <Sparkles className="h-7 w-7 text-primary-foreground" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary glow-blue-sm">
+              <Droplets className="h-7 w-7 text-primary-foreground" />
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Lavadero-App</CardTitle>
+            <CardTitle className="text-2xl font-bold">CarwashIApp</CardTitle>
             <CardDescription>Sistema de Gestión para Autolavado</CardDescription>
           </div>
         </CardHeader>
@@ -106,7 +106,7 @@ export default function Auth() {
               <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
               <TabsTrigger value="signup">Registrarse</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
@@ -143,7 +143,7 @@ export default function Auth() {
                 </form>
               </Form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <Form {...signupForm}>
                 <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">

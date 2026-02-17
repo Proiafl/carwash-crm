@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
     Plus, Clock, User, Car, Sparkles, ChevronRight,
-    LayoutGrid, List, Play, CheckCircle2, Truck, X, Timer
+    LayoutGrid, List, Play, CheckCircle2, Truck, X, Timer, DollarSign
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ type ServiceOrder = {
     price: number;
     assigned_to: string | null;
     status: "queued" | "in_progress" | "ready" | "delivered" | "cancelled";
+    payment_status: "pending" | "paid" | null;
     queued_at: string;
     started_at: string | null;
     completed_at: string | null;
@@ -138,7 +139,7 @@ export default function Ordenes() {
                 ...o,
                 assigned_profile: o.assigned_to ? { full_name: profilesMap[o.assigned_to] || "Sin asignar" } : null,
             }));
-            setOrders(enriched as ServiceOrder[]);
+            setOrders(enriched as unknown as ServiceOrder[]);
         }
         setIsLoading(false);
     }, [toast]);
@@ -270,6 +271,26 @@ export default function Ordenes() {
         setCancelOrder(null);
     };
 
+    const handleTogglePayment = async (e: React.MouseEvent, order: ServiceOrder) => {
+        e.stopPropagation();
+        const newStatus = order.payment_status === "paid" ? "pending" : "paid";
+        const { error } = await supabase
+            .from("service_orders")
+            .update({ payment_status: newStatus } as any)
+            .eq("id", order.id);
+
+        if (error) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } else {
+            toast({ title: newStatus === "paid" ? "✅ Marcado como Pagado" : "⏳ Marcado como Pendiente" });
+            // Update selectedOrder in-place so the detail dialog refreshes instantly
+            if (selectedOrder?.id === order.id) {
+                setSelectedOrder({ ...selectedOrder, payment_status: newStatus });
+            }
+            fetchOrders();
+        }
+    };
+
     // === Render Helpers ===
     const getNextStatus = (status: string) => {
         const flow: Record<string, string> = {
@@ -292,6 +313,23 @@ export default function Ordenes() {
     const ordersByStatus = (status: string) => orders.filter(o => o.status === status);
 
     // === Kanban Card ===
+    const PaymentBadge = ({ order }: { order: ServiceOrder }) => {
+        const isPaid = order.payment_status === "paid";
+        return (
+            <button
+                onClick={(e) => handleTogglePayment(e, order)}
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border transition-all hover:scale-105 active:scale-95 cursor-pointer ${isPaid
+                    ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/25"
+                    : "bg-amber-500/15 text-amber-600 border-amber-500/30 hover:bg-amber-500/25 animate-pulse"
+                    }`}
+                title={isPaid ? "Click para marcar como pendiente" : "Click para marcar como pagado"}
+            >
+                <DollarSign className="h-3 w-3" />
+                {isPaid ? "Pagado" : "Pendiente"}
+            </button>
+        );
+    };
+
     const OrderCard = ({ order }: { order: ServiceOrder }) => (
         <Card className="mb-3 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedOrder(order)}>
             <CardContent className="p-4 space-y-2">
@@ -306,9 +344,12 @@ export default function Ordenes() {
                     <User className="h-3 w-3" />
                     {order.clients?.name || "Sin cliente"}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Sparkles className="h-3 w-3" />
-                    {order.service_types?.name || "Sin servicio"}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Sparkles className="h-3 w-3" />
+                        {order.service_types?.name || "Sin servicio"}
+                    </div>
+                    <PaymentBadge order={order} />
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -397,6 +438,7 @@ export default function Ordenes() {
                                     <th className="p-3 text-left font-semibold">Cliente</th>
                                     <th className="p-3 text-left font-semibold">Servicio</th>
                                     <th className="p-3 text-left font-semibold">Estado</th>
+                                    <th className="p-3 text-left font-semibold">Pago</th>
                                     <th className="p-3 text-left font-semibold">Empleado</th>
                                     <th className="p-3 text-left font-semibold">Tiempo</th>
                                     <th className="p-3 text-left font-semibold">Precio</th>
@@ -413,6 +455,7 @@ export default function Ordenes() {
                                                 {STATUS_CONFIG[order.status]?.label}
                                             </Badge>
                                         </td>
+                                        <td className="p-3"><PaymentBadge order={order} /></td>
                                         <td className="p-3 text-muted-foreground">{order.assigned_profile?.full_name || "-"}</td>
                                         <td className="p-3 text-muted-foreground">{elapsedTime(order.started_at || order.queued_at)}</td>
                                         <td className="p-3 font-semibold">${Number(order.price).toLocaleString()}</td>
@@ -510,6 +553,30 @@ export default function Ordenes() {
                                 <DialogDescription>{selectedOrder.vehicle_description}</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 mt-4">
+                                {/* Payment Status Banner */}
+                                <div
+                                    onClick={(e) => handleTogglePayment(e, selectedOrder)}
+                                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] ${selectedOrder.payment_status === "paid"
+                                        ? "bg-emerald-500/10 border-emerald-500/30"
+                                        : "bg-amber-500/10 border-amber-500/30"
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <DollarSign className={`h-5 w-5 ${selectedOrder.payment_status === "paid" ? "text-emerald-500" : "text-amber-500"}`} />
+                                        <div>
+                                            <p className={`font-semibold text-sm ${selectedOrder.payment_status === "paid" ? "text-emerald-600" : "text-amber-600"}`}>
+                                                {selectedOrder.payment_status === "paid" ? "Pagado" : "Pago Pendiente"}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">Click para cambiar estado de pago</p>
+                                        </div>
+                                    </div>
+                                    <div className={`w-12 h-7 rounded-full relative transition-colors ${selectedOrder.payment_status === "paid" ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"
+                                        }`}>
+                                        <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${selectedOrder.payment_status === "paid" ? "translate-x-5" : "translate-x-0.5"
+                                            }`} />
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div><span className="text-muted-foreground">Cliente:</span> <span className="font-medium ml-1">{selectedOrder.clients?.name}</span></div>
                                     <div><span className="text-muted-foreground">Teléfono:</span> <span className="font-medium ml-1">{selectedOrder.clients?.phone || "-"}</span></div>
