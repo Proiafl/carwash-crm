@@ -14,6 +14,7 @@ import Inventario from "./pages/Inventario";
 import Finanzas from "./pages/Finanzas";
 import Personal from "./pages/Personal";
 import Configuracion from "./pages/Configuracion";
+import QrCheckin from "./pages/QrCheckin";
 import Ordenes from "./pages/Ordenes";
 import CheckInWizard from "./pages/CheckIn";
 import StatusMonitor from "./pages/CheckIn/Step5Status"; // Separate route
@@ -73,6 +74,7 @@ function AppRoutes() {
       <Route path="/app/inventario" element={<ProtectedRoute><Inventario /></ProtectedRoute>} />
       <Route path="/app/finanzas" element={<ProtectedRoute><Finanzas /></ProtectedRoute>} />
       <Route path="/app/personal" element={<ProtectedRoute><Personal /></ProtectedRoute>} />
+      <Route path="/app/qr-checkin" element={<ProtectedRoute><QrCheckin /></ProtectedRoute>} />
       <Route path="/app/configuracion" element={<ProtectedRoute><Configuracion /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

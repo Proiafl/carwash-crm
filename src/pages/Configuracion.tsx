@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import {
     UserCog, Shield, ShieldCheck, Users, Store, Bell, Bot, Save,
     MessageSquare, Send, Eye, EyeOff, History, CheckCircle2, XCircle,
-    Clock, Loader2, Phone, RefreshCw, QrCode, Printer, ExternalLink
+    Clock, Loader2, Phone, RefreshCw, QrCode, Printer, ExternalLink,
+    UserPlus, Edit, Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,10 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import { createClient } from "@supabase/supabase-js";
 
 // === Types ===
 type Employee = {
@@ -77,6 +82,9 @@ export default function Configuracion() {
     const [notifLoading, setNotifLoading] = useState(false);
     const { toast } = useToast();
     const { role, user } = useAuth();
+    const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+    const [currentUserForm, setCurrentUserForm] = useState({ id: "", full_name: "", email: "", role: "operador", password: "", user_id: "" });
+    const [isSavingUser, setIsSavingUser] = useState(false);
 
     // Settings state from Supabase
     const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -211,10 +219,86 @@ export default function Configuracion() {
     };
 
     // === Role helpers ===
-    const roleLabels: Record<string, string> = { admin: "Administrador", employee: "Empleado" };
+    const roleLabels: Record<string, string> = { admin: "Administrador", caja: "Caja", operador: "Operador", employee: "Empleado" };
     const roleColors: Record<string, string> = {
         admin: "bg-primary/10 text-primary border-primary/30",
+        caja: "bg-orange-500/10 text-orange-500 border-orange-500/30",
+        operador: "bg-blue-500/10 text-blue-500 border-blue-500/30",
         employee: "bg-muted text-muted-foreground border-muted",
+    };
+
+    const handleSaveUser = async () => {
+        if (!currentUserForm.full_name || !currentUserForm.role) {
+            toast({ title: "Datos incompletos", variant: "destructive" });
+            return;
+        }
+
+        setIsSavingUser(true);
+        try {
+            if (currentUserForm.id) {
+                // UPDATE ROLES
+                const { error: roleError } = await supabase.from("user_roles").upsert({
+                    user_id: currentUserForm.user_id,
+                    role: currentUserForm.role
+                });
+                if (roleError) throw roleError;
+                
+                toast({ title: "Usuario actualizado", description: "El rol ha sido modificado" });
+            } else {
+                // CREATE NEW USER via secondary client to prevent logout
+                if (!currentUserForm.email || !currentUserForm.password) {
+                    throw new Error("Email y contraseña requeridos para nuevo usuario");
+                }
+                const secondarySupabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+                
+                const { data, error: signUpError } = await secondarySupabase.auth.signUp({
+                    email: currentUserForm.email,
+                    password: currentUserForm.password,
+                    options: { data: { full_name: currentUserForm.full_name } }
+                });
+                if (signUpError) throw signUpError;
+                
+                // Assign role (needs to run via RPC or just let trigger handle profile, we do user_roles)
+                if (data.user) {
+                    await supabase.from("user_roles").insert({
+                        user_id: data.user.id,
+                        role: currentUserForm.role
+                    });
+                }
+                toast({ title: "Usuario creado", description: "El usuario ha sido dado de alta exitosamente" });
+            }
+            
+            setIsUserDialogOpen(false);
+            fetchUsers();
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        } finally {
+            setIsSavingUser(false);
+        }
+    };
+
+    const handleDeleteUser = async (empId: string, userId: string) => {
+        if(!confirm("¿Dar de baja este usuario? Se removerá su acceso.")) return;
+        try {
+            await supabase.from("user_roles").delete().eq("user_id", userId);
+            await supabase.from("profiles").delete().eq("id", empId);
+            toast({ title: "Usuario dado de baja" });
+            fetchUsers();
+        } catch(e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" });
+        }
+    };
+
+    const openCreateDialog = () => {
+        setCurrentUserForm({ id: "", full_name: "", email: "", role: "operador", password: "", user_id: "" });
+        setIsUserDialogOpen(true);
+    };
+
+    const openEditDialog = (emp: Employee) => {
+        setCurrentUserForm({ id: emp.id, full_name: emp.full_name, email: emp.email || "", role: emp.role || "operador", password: "", user_id: emp.user_id });
+        setIsUserDialogOpen(true);
     };
 
     const updateField = (field: keyof AppSettings, value: any) => {
@@ -267,65 +351,9 @@ export default function Configuracion() {
                         <Users className="h-4 w-4" />
                         <span className="hidden sm:inline">Usuarios</span>
                     </TabsTrigger>
-                    <TabsTrigger value="qr-checkin" className="flex items-center gap-1">
-                        <QrCode className="h-4 w-4" />
-                        <span className="hidden sm:inline">QR Check-in</span>
-                    </TabsTrigger>
                 </TabsList>
 
-                {/* ========== TAB: QR CHECK-IN ========== */}
-                <TabsContent value="qr-checkin" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <QrCode className="h-5 w-5 text-primary" />
-                                Sistema de Auto-Checkin
-                            </CardTitle>
-                            <CardDescription>
-                                Genera un código QR para que tus clientes se registren automáticamente al llegar.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
-                                <div className="bg-white p-4 rounded-xl shadow-lg border">
-                                    <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.origin + "/checkin")}`}
-                                        alt="QR Code Check-in"
-                                        className="w-48 h-48 md:w-64 md:h-64 object-contain"
-                                    />
-                                    <p className="text-xs text-muted-foreground mt-2 font-mono">{window.location.origin}/checkin</p>
-                                </div>
-                                <div className="space-y-4 max-w-md">
-                                    <div>
-                                        <h3 className="font-semibold text-lg">¿Cómo funciona?</h3>
-                                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                                            Imprimí este código QR y colocalo en la entrada o recepción.
-                                            Tus clientes podrán escanearlo con su celular para:
-                                        </p>
-                                        <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside text-left">
-                                            <li>Registrarse rápidamente</li>
-                                            <li>Seleccionar su servicio sin espera</li>
-                                            <li>Ver el estado de su auto en tiempo real</li>
-                                        </ul>
-                                    </div>
 
-                                    <div className="flex flex-wrap gap-3 pt-2 justify-center md:justify-start">
-                                        <Button onClick={() => window.print()} variant="outline" className="gap-2">
-                                            <Printer className="h-4 w-4" />
-                                            Imprimir
-                                        </Button>
-                                        <Button asChild className="gap-2">
-                                            <a href="/checkin" target="_blank" rel="noopener noreferrer">
-                                                <ExternalLink className="h-4 w-4" />
-                                                Abrir Pantalla de Check-in
-                                            </a>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
 
                 {/* ========== TAB: NEGOCIO ========== */}
                 <TabsContent value="negocio" className="mt-6">
@@ -702,6 +730,19 @@ export default function Configuracion() {
 
                 {/* ========== TAB: USUARIOS ========== */}
                 <TabsContent value="usuarios" className="space-y-6 mt-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-medium">Gestión de Personal</h3>
+                            <p className="text-sm text-muted-foreground">Administra los accesos y roles de tu equipo</p>
+                        </div>
+                        {role === "admin" && (
+                            <Button onClick={openCreateDialog} className="gap-2">
+                                <UserPlus className="h-4 w-4" />
+                                Añadir Usuario
+                            </Button>
+                        )}
+                    </div>
+
                     {isLoading ? (
                         <div className="flex items-center justify-center h-64">
                             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -709,7 +750,19 @@ export default function Configuracion() {
                     ) : (
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {employees.map((emp) => (
-                                <Card key={emp.id} className="transition-shadow hover:shadow-md">
+                                <Card key={emp.id} className="transition-shadow hover:shadow-md relative group">
+                                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {role === "admin" && (
+                                            <>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(emp)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteUser(emp.id, emp.user_id)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
@@ -720,9 +773,9 @@ export default function Configuracion() {
                                                         <UserCog className="h-5 w-5 text-primary" />
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <CardTitle className="text-base">{emp.full_name}</CardTitle>
-                                                    <CardDescription className="text-xs truncate max-w-[150px]">
+                                                <div className="max-w-[140px]">
+                                                    <CardTitle className="text-base truncate">{emp.full_name}</CardTitle>
+                                                    <CardDescription className="text-xs truncate">
                                                         {emp.email || "Sin email"}
                                                     </CardDescription>
                                                 </div>
@@ -733,7 +786,7 @@ export default function Configuracion() {
                                         <div className="flex items-center justify-between">
                                             <Badge variant="outline" className={roleColors[emp.role || "employee"]}>
                                                 <Shield className="h-3 w-3 mr-1" />
-                                                {roleLabels[emp.role || "employee"]}
+                                                {roleLabels[emp.role || "employee"] || roleLabels["employee"]}
                                             </Badge>
                                             <span className="text-[10px] text-muted-foreground">
                                                 ID: {emp.user_id.split('-')[0]}...
@@ -745,19 +798,52 @@ export default function Configuracion() {
                         </div>
                     )}
 
-                    {role === "admin" && (
-                        <Card className="bg-muted/30 border-dashed">
-                            <CardHeader>
-                                <CardTitle className="text-sm flex items-center gap-2">
-                                    <Shield className="h-4 w-4" />
-                                    Privilegios de Administrador
-                                </CardTitle>
-                                <CardDescription className="text-xs">
-                                    Los cambios de roles críticos requieren acceso directo a nivel de base de datos o consola de Supabase por seguridad.
-                                </CardDescription>
-                            </CardHeader>
-                        </Card>
-                    )}
+                    <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{currentUserForm.id ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
+                                <DialogDescription>
+                                    Asigna roles: Admin (acceso total), Caja (acceso financiero sin crear usuarios), Operador (solo órdenes).
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Nombre Completo</Label>
+                                    <Input value={currentUserForm.full_name} onChange={(e) => setCurrentUserForm({...currentUserForm, full_name: e.target.value})} disabled={!!currentUserForm.id} />
+                                </div>
+                                {!currentUserForm.id && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label>Email</Label>
+                                            <Input type="email" value={currentUserForm.email} onChange={(e) => setCurrentUserForm({...currentUserForm, email: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Contraseña</Label>
+                                            <Input type="password" value={currentUserForm.password} onChange={(e) => setCurrentUserForm({...currentUserForm, password: e.target.value})} />
+                                        </div>
+                                    </>
+                                )}
+                                <div className="space-y-2">
+                                    <Label>Rol</Label>
+                                    <Select value={currentUserForm.role} onValueChange={(v) => setCurrentUserForm({...currentUserForm, role: v})}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="admin">Administrador</SelectItem>
+                                            <SelectItem value="caja">Caja</SelectItem>
+                                            <SelectItem value="operador">Operador</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>Cancelar</Button>
+                                <Button onClick={handleSaveUser} disabled={isSavingUser}>
+                                    {isSavingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Guardar
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </TabsContent>
             </Tabs>
         </div>

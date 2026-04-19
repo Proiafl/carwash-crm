@@ -10,26 +10,15 @@ import {
   LogOut,
   Menu,
   Settings,
-  ClipboardList
+  ClipboardList,
+  QrCode
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useSettings } from "@/hooks/useSettings";
 
 const menuItems = [
   { title: "Dashboard", url: "/app", icon: LayoutDashboard },
@@ -38,13 +27,14 @@ const menuItems = [
   { title: "Servicios", url: "/app/servicios", icon: Sparkles },
   { title: "Inventario", url: "/app/inventario", icon: Package },
   { title: "Finanzas", url: "/app/finanzas", icon: DollarSign },
-  { title: "Personal", url: "/app/personal", icon: UserCog },
+  { title: "QR Check-in", url: "/app/qr-checkin", icon: QrCode },
   { title: "Configuración", url: "/app/configuracion", icon: Settings },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const { signOut, user } = useAuth();
+  const { signOut, user, role } = useAuth();
+  const { businessName } = useSettings();
   const collapsed = state === "collapsed";
 
   return (
@@ -56,7 +46,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-sidebar-foreground">CarwashIApp</span>
+              <span className="text-lg font-bold text-sidebar-foreground">{businessName}</span>
               <span className="text-xs text-sidebar-foreground/60">Sistema de Gestión</span>
             </div>
           )}
@@ -72,7 +62,11 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {menuItems.filter(item => {
+                if (role === 'operador' && !['Órdenes', 'Dashboard', 'QR Check-in'].includes(item.title)) return false;
+                if (role === 'caja' && item.title === 'Configuración') return false;
+                return true;
+              }).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink

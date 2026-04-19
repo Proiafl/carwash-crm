@@ -6,10 +6,12 @@ import Identification from "./Identification";
 import NewClient from "./NewClient";
 import ServiceSelection from "./ServiceSelection";
 import Confirmation from "./Confirmation";
+import { useSettings } from "@/hooks/useSettings";
 
 type Step = "identification" | "new_client" | "service" | "confirmation";
 
 export default function CheckInWizard() {
+    const { businessName } = useSettings();
     const [step, setStep] = useState<Step>("identification");
     const [client, setClient] = useState<any>(null);
     const [plate, setPlate] = useState("");
@@ -75,7 +77,7 @@ export default function CheckInWizard() {
             <div className="w-full max-w-md pt-8 pb-6 flex items-center justify-center">
                 <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
                     <span className="bg-primary/20 text-primary p-2 rounded-lg">🚗💨</span>
-                    <span>CarWash Buddy</span>
+                    <span>{businessName}</span>
                 </div>
             </div>
 

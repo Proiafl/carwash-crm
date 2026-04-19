@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Droplets, ClipboardList, Users, Package, DollarSign, MessageSquare, TrendingUp, Clock, Shield, CheckCircle2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSettings } from "@/hooks/useSettings";
 
 const features = [
     {
@@ -61,6 +62,7 @@ const stats = [
 ];
 
 export default function Landing() {
+    const { businessName } = useSettings();
     return (
         <div className="min-h-screen bg-background">
             {/* Navbar */}
@@ -70,7 +72,7 @@ export default function Landing() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary glow-blue-sm">
                             <Droplets className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <span className="text-xl font-bold">CarwashIApp</span>
+                        <span className="text-xl font-bold">{businessName}</span>
                     </Link>
 
                     <div className="hidden md:flex items-center gap-8">
@@ -123,7 +125,7 @@ export default function Landing() {
                     </h1>
 
                     <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto px-4">
-                        Únete a docenas de lavaderos que ya automatizan su gestión con CarwashIApp.
+                        Únete a docenas de lavaderos que ya automatizan su gestión con {businessName}.
                         Prueba gratis por 14 días, sin tarjeta de crédito.
                     </p>
 
@@ -265,10 +267,10 @@ export default function Landing() {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-2">
                             <Droplets className="h-5 w-5 text-primary" />
-                            <span className="font-semibold">CarwashIApp</span>
+                            <span className="font-semibold">{businessName}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                            © 2026 CarwashIApp. Todos los derechos reservados.
+                            © 2026 {businessName}. Todos los derechos reservados.
                         </div>
                     </div>
                 </div>
