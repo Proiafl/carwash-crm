@@ -57,9 +57,8 @@ export default function Auth() {
           : error.message,
         variant: "destructive",
       });
-    } else {
-      navigate("/app");
     }
+    // AuthRoute will automatically redirect to /app when the session updates
   };
 
   const handleSignup = async (data: SignupFormData) => {
@@ -80,9 +79,9 @@ export default function Auth() {
     } else {
       toast({
         title: "¡Registro exitoso!",
-        description: "Tu cuenta ha sido creada. Ya puedes iniciar sesión.",
+        description: "Tu cuenta ha sido creada y ya estás conectado.",
       });
-      navigate("/");
+      // AuthRoute will automatically redirect to /app when the session updates
     }
   };
 
