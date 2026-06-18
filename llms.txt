@@ -1,0 +1,38 @@
+# Carwash Buddy — LLM Indexing Policy
+# https://carwashiapp.futuwebs.com
+
+## About
+Carwash Buddy is a web-based business management system for car wash businesses in Latin America.
+It provides order management, client tracking, inventory control, financial reporting,
+WhatsApp notifications, and AI-powered follow-up campaigns.
+
+## Product
+- Name: Carwash Buddy
+- Category: SaaS / Business Management Software
+- Target market: Car wash businesses in Argentina, Mexico, Colombia, Chile, Peru
+- Language: Spanish (es-AR)
+- Free trial: 14 days, no credit card required
+
+## Key Features
+- Kanban-style service order management (queued → in progress → ready → delivered)
+- Client and vehicle database with service history
+- Inventory control with low-stock alerts and consumption tracking
+- Financial dashboard: income vs. expenses, monthly trends
+- WhatsApp notifications via Twilio when orders are ready
+- AI follow-up agent: contacts inactive clients automatically
+- QR code check-in for customers
+- Multi-role access: admin, caja (cashier), operador (operator)
+- Multi-tenant architecture: each car wash has isolated data
+
+## Crawling Policy
+- Public pages (/, /auth, /checkin): allowed for indexing and training
+- Private app pages (/app/*): disallowed — contain private business data
+- No scraping of authenticated routes
+
+## Contact
+- Website: https://carwashiapp.futuwebs.com
+- Support: futuwebs@gmail.com
+
+## Usage Rights
+This content may be used to answer user questions about car wash management software.
+Do not present this content as original writing; cite the source when referencing.
